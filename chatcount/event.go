@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/FloatTech/imgfactory"
 	"github.com/FloatTech/rendercard"
+	"github.com/kohmebot/plugin/pkg/chain"
 	"github.com/kohmebot/plugin/pkg/gopool"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
@@ -39,7 +40,7 @@ func (p *PluginChatCount) SetOnTimeSearch(engine *zero.Engine) {
 func (p *PluginChatCount) SetOnRankSearch(engine *zero.Engine) {
 	engine.OnCommand("水群排名", p.env.Groups().Rule()).SetBlock(true).
 		Handle(func(ctx *zero.Ctx) {
-			sendimg, err := p.getRankImage(ctx, ctx.Event.GroupID)
+			sendimg, err := p.getRankImage(ctx, ctx.Event.GroupID, p.conf.RankTitleTrigger)
 			if err != nil {
 				p.env.Error(ctx, err)
 				return
@@ -50,7 +51,7 @@ func (p *PluginChatCount) SetOnRankSearch(engine *zero.Engine) {
 		})
 }
 
-func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64) ([]byte, error) {
+func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64, rankTitle string) ([]byte, error) {
 
 	chatTimeList := p.ctdb.getChatRank(group)
 	if len(chatTimeList) == 0 {
@@ -88,7 +89,7 @@ func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	img, err := rendercard.DrawRankingCard(fontbyte, p.conf.RankTitle, rankinfo)
+	img, err := rendercard.DrawRankingCard(fontbyte, rankTitle, rankinfo)
 	if err != nil {
 		return nil, err
 	}
@@ -111,10 +112,15 @@ func (p *PluginChatCount) startRankSendTicker() {
 
 			for ctx := range p.env.RangeBot {
 				for group := range p.env.Groups().RangeGroup {
-					imgdata, err := p.getRankImage(ctx, group)
+					imgdata, err := p.getRankImage(ctx, group, p.conf.RankTitleTicker)
 					if err == nil || errors.Is(err, noDataError) {
 						gopool.Go(func() {
-							ctx.SendChain(message.ImageBytes(imgdata))
+							var msgChain chain.MessageChain
+							if len(p.conf.MsgWithTicker) > 0 {
+								msgChain.Line(message.Text(p.conf.MsgWithTicker))
+							}
+							msgChain.Join(message.ImageBytes(imgdata))
+							ctx.SendGroupMessage(group, msgChain)
 						})
 					} else {
 						p.env.Error(ctx, err)
