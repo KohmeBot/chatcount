@@ -23,10 +23,11 @@ const (
 )
 
 type PluginChatCount struct {
-	env  plugin.Env
-	ctdb *chattimedb
-	l    *leveler
-	conf Config
+	env      plugin.Env
+	ctdb     *chattimedb
+	l        *leveler
+	conf     Config
+	filePath string
 }
 
 func NewPlugin() plugin.Plugin {
@@ -37,6 +38,10 @@ func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	p.env = env
 
 	err := env.GetConf(&p.conf)
+	if err != nil {
+		return err
+	}
+	p.filePath, err = env.FilePath()
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,10 @@
 package chatcount
 
-import "os"
+import (
+	"os"
+	"path/filepath"
+)
 
 func (p *PluginChatCount) getFontData() ([]byte, error) {
-	path := p.conf.Font
-	return os.ReadFile(path)
+	return os.ReadFile(filepath.Join(p.filePath, p.conf.Font))
 }
