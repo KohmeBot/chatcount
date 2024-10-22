@@ -35,6 +35,11 @@ func NewPlugin() plugin.Plugin {
 
 func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	p.env = env
+
+	err := env.GetConf(&p.conf)
+	if err != nil {
+		return err
+	}
 	db, err := env.GetDB()
 	if err != nil {
 		return err
