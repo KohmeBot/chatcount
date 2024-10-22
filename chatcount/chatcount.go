@@ -26,7 +26,6 @@ func NewPlugin() plugin.Plugin {
 
 func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	p.env = env
-
 	err := env.GetConf(&p.conf)
 	if err != nil {
 		return err
@@ -67,7 +66,7 @@ func (p *PluginChatCount) Commands() command.Commands {
 }
 
 func (p *PluginChatCount) Version() version.Version {
-	return version.NewVersion(1, 0, 31)
+	return version.NewVersion(1, 0, 32)
 }
 
 func (p *PluginChatCount) OnBoot() {
