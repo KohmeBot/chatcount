@@ -62,12 +62,12 @@ func (p *PluginChatCount) Description() string {
 func (p *PluginChatCount) Commands() command.Commands {
 	return command.NewCommands(
 		command.NewCommand("查看当前水群情况", "查询水群"),
-		command.NewCommand("查看当日水群排行", "水群排行"),
+		command.NewCommand("查看当日水群排行", "水群排名"),
 	)
 }
 
 func (p *PluginChatCount) Version() version.Version {
-	return version.NewVersion(1, 0, 30)
+	return version.NewVersion(1, 0, 31)
 }
 
 func (p *PluginChatCount) OnBoot() {
