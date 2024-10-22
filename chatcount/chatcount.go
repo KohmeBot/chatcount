@@ -67,7 +67,7 @@ func (p *PluginChatCount) Commands() command.Commands {
 }
 
 func (p *PluginChatCount) Version() version.Version {
-	return version.NewVersion(1, 0, 20)
+	return version.NewVersion(1, 0, 30)
 }
 
 func (p *PluginChatCount) OnBoot() {
