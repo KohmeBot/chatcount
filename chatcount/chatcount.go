@@ -43,9 +43,9 @@ func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 		return err
 	}
 
-	p.SetOnRankSearch(engine)
 	p.SetOnMsg(engine)
 	p.SetOnRankSearch(engine)
+	p.SetOnTimeSearch(engine)
 
 	return nil
 }
@@ -66,7 +66,7 @@ func (p *PluginChatCount) Commands() command.Commands {
 }
 
 func (p *PluginChatCount) Version() version.Version {
-	return version.NewVersion(1, 0, 32)
+	return version.NewVersion(1, 0, 33)
 }
 
 func (p *PluginChatCount) OnBoot() {
