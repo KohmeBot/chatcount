@@ -55,7 +55,7 @@ func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	}
 	engine.OnMessage(p.env.Groups().Rule()).
 		Handle(func(ctx *zero.Ctx) {
-			remindTime, remindFlag := ctdb.updateChatTime(ctx.Event.GroupID, ctx.Event.UserID)
+			remindTime, remindFlag := p.ctdb.updateChatTime(ctx.Event.GroupID, ctx.Event.UserID)
 			if remindFlag {
 				ctx.SendChain(message.At(ctx.Event.UserID), message.Text(fmt.Sprintf("BOT提醒：你今天已经水群%d分钟了！", remindTime)))
 			}
@@ -63,12 +63,12 @@ func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 
 	engine.OnPrefix(`查询水群`, p.env.Groups().Rule()).SetBlock(true).Handle(func(ctx *zero.Ctx) {
 		name := ctx.NickName()
-		todayTime, todayMessage, totalTime, totalMessage := ctdb.getChatTime(ctx.Event.GroupID, ctx.Event.UserID)
+		todayTime, todayMessage, totalTime, totalMessage := p.ctdb.getChatTime(ctx.Event.GroupID, ctx.Event.UserID)
 		ctx.SendChain(message.Reply(ctx.Event.MessageID), message.Text(fmt.Sprintf("%s今天水了%d分%d秒，发了%d条消息；总计水了%d分%d秒，发了%d条消息。", name, todayTime/60, todayTime%60, todayMessage, totalTime/60, totalTime%60, totalMessage)))
 	})
 	engine.OnFullMatch("查看水群排名", p.env.Groups().Rule()).SetBlock(true).
 		Handle(func(ctx *zero.Ctx) {
-			chatTimeList := ctdb.getChatRank(ctx.Event.GroupID)
+			chatTimeList := p.ctdb.getChatRank(ctx.Event.GroupID)
 			if len(chatTimeList) == 0 {
 				ctx.SendChain(message.Text("ERROR: 没有水群数据"))
 				return

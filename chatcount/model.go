@@ -17,13 +17,6 @@ const (
 	chatInterval = 300
 )
 
-var (
-	// ctdb 聊天时长数据库全局变量
-	ctdb *chattimedb
-	// l 水群提醒时间提醒段，单位分钟
-	l = newLeveler(60, 120, 180, 240, 300)
-)
-
 // chattimedb 聊天时长数据库结构体
 type chattimedb struct {
 	// ctdb.userTimestampMap 每个人发言的时间戳 key=groupID_userID
@@ -36,6 +29,8 @@ type chattimedb struct {
 	db *gorm.DB
 	// chatmu 读写添加锁
 	chatmu sync.Mutex
+
+	l *leveler
 }
 
 // initialize 初始化
@@ -46,6 +41,7 @@ func initialize(gdb *gorm.DB) (*chattimedb, error) {
 	}
 	return &chattimedb{
 		db: gdb,
+		l:  newLeveler(60, 120, 180, 240, 300),
 	}, nil
 }
 
@@ -114,7 +110,7 @@ func (ctdb *chattimedb) updateChatTime(gid, uid int64) (remindTime int64, remind
 	if userChatTime < chatInterval {
 		ctdb.userTodayTimeMap.Store(keyword, todayTime+userChatTime)
 		remindTime = (todayTime + userChatTime) / 60
-		remindFlag = l.level(int((todayTime+userChatTime)/60)) > l.level(int(todayTime/60))
+		remindFlag = ctdb.l.level(int((todayTime+userChatTime)/60)) > ctdb.l.level(int(todayTime/60))
 	}
 	ctdb.userTimestampMap.Store(keyword, now.Unix())
 	return
