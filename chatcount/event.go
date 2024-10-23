@@ -99,12 +99,12 @@ func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64, rankTitle str
 }
 
 func (p *PluginChatCount) startRankSendTicker() {
-	if len(p.conf.SendRankCorn) <= 0 {
+	if len(p.conf.SendRankCron) <= 0 {
 		return
 	}
 	c := cron.New()
 	var id cron.EntryID
-	id, err := c.AddFunc(p.conf.SendRankCorn, func() {
+	id, err := c.AddFunc(p.conf.SendRankCron, func() {
 		for ctx := range p.env.RangeBot {
 			for group := range p.env.Groups().RangeGroup {
 				imgdata, err := p.getRankImage(ctx, group, p.conf.RankTitleTicker)
