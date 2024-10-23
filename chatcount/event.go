@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"time"
 )
 
 var noDataError = errors.New("没有水群数据")
@@ -130,6 +131,7 @@ func (p *PluginChatCount) startRankSendTicker() {
 		return
 	}
 
-	logrus.Infof("将在 %s 发送Rank", c.Entry(id).Next)
 	c.Start()
+	time.Sleep(300 * time.Millisecond)
+	logrus.Infof("将在 %s 发送Rank", c.Entry(id).Next)
 }
