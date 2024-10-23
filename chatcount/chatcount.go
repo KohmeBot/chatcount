@@ -67,7 +67,7 @@ func (p *PluginChatCount) Commands() fmt.Stringer {
 }
 
 func (p *PluginChatCount) Version() uint64 {
-	return uint64(version.NewVersion(1, 0, 40))
+	return uint64(version.NewVersion(1, 0, 41))
 }
 
 func (p *PluginChatCount) OnBoot() {
