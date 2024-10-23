@@ -32,7 +32,7 @@ func (p *PluginChatCount) SetOnMsg(engine *zero.Engine) {
 }
 
 func (p *PluginChatCount) SetOnTimeSearch(engine *zero.Engine) {
-	engine.OnCommand("查询水群", p.env.Groups().Rule()).SetBlock(true).Handle(func(ctx *zero.Ctx) {
+	engine.OnCommand("水群查询", p.env.Groups().Rule()).SetBlock(true).Handle(func(ctx *zero.Ctx) {
 		name := ctx.NickName()
 		todayTime, todayMessage, totalTime, totalMessage := p.ctdb.getChatTime(ctx.Event.GroupID, ctx.Event.UserID)
 		ctx.SendChain(message.Reply(ctx.Event.MessageID), message.Text(fmt.Sprintf("%s今天水了%d分%d秒，发了%d条消息；总计水了%d分%d秒，发了%d条消息。", name, todayTime/60, todayTime%60, todayMessage, totalTime/60, totalTime%60, totalMessage)))
