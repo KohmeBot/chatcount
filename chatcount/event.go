@@ -108,8 +108,17 @@ func (p *PluginChatCount) startRankSendTicker() {
 	id, err := c.AddFunc(p.conf.SendRankCron, func() {
 		for ctx := range p.env.RangeBot {
 			for group := range p.env.Groups().RangeGroup {
-				imgdata, err := p.getRankImage(ctx, group, p.conf.RankTitleTicker)
-				if err == nil || errors.Is(err, noDataError) {
+				var err error
+				var imgdata []byte
+				for retryCount := 0; retryCount < 5; retryCount++ {
+					imgdata, err = p.getRankImage(ctx, group, p.conf.RankTitleTicker)
+					if errors.Is(err, noDataError) {
+						time.Sleep(time.Duration(retryCount) * 200 * time.Millisecond)
+						continue
+					}
+					break
+				}
+				if err == nil {
 					gopool.Go(func() {
 						var msgChain chain.MessageChain
 						if len(p.conf.MsgWithTicker) > 0 {
@@ -119,7 +128,9 @@ func (p *PluginChatCount) startRankSendTicker() {
 						ctx.SendGroupMessage(group, msgChain)
 					})
 				} else {
-					p.env.Error(ctx, err)
+					if !errors.Is(err, noDataError) {
+						p.env.Error(ctx, err)
+					}
 				}
 
 			}
