@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"github.com/FloatTech/imgfactory"
 	"github.com/FloatTech/rendercard"
-	"github.com/kohmebot/plugin/pkg/chain"
-	"github.com/kohmebot/plugin/pkg/gopool"
+	"github.com/kohmebot/pkg/chain"
+	"github.com/kohmebot/pkg/gopool"
+	"github.com/robfig/cron/v3"
+	"github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 	"image"
 	"net/http"
 	"strconv"
 	"sync"
-	"time"
 )
 
 var noDataError = errors.New("没有水群数据")
@@ -98,37 +99,37 @@ func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64, rankTitle str
 }
 
 func (p *PluginChatCount) startRankSendTicker() {
-	go func() {
-		for {
-			now := time.Now()
-			// 计算下一个发送时间
-			next := time.Date(now.Year(), now.Month(), now.Day(), int(p.conf.SendRankTime), 0, 0, 0, now.Location())
-			// 如果已经过了今天，则设为明天
-			if now.After(next) {
-				next = next.Add(24 * time.Hour)
-			}
-			duration := next.Sub(now)
-			time.Sleep(duration)
-
-			for ctx := range p.env.RangeBot {
-				for group := range p.env.Groups().RangeGroup {
-					imgdata, err := p.getRankImage(ctx, group, p.conf.RankTitleTicker)
-					if err == nil || errors.Is(err, noDataError) {
-						gopool.Go(func() {
-							var msgChain chain.MessageChain
-							if len(p.conf.MsgWithTicker) > 0 {
-								msgChain.Line(message.Text(p.conf.MsgWithTicker))
-							}
-							msgChain.Join(message.ImageBytes(imgdata))
-							ctx.SendGroupMessage(group, msgChain)
-						})
-					} else {
-						p.env.Error(ctx, err)
-					}
-
+	if len(p.conf.SendRankCorn) <= 0 {
+		return
+	}
+	c := cron.New()
+	var id cron.EntryID
+	id, err := c.AddFunc(p.conf.SendRankCorn, func() {
+		for ctx := range p.env.RangeBot {
+			for group := range p.env.Groups().RangeGroup {
+				imgdata, err := p.getRankImage(ctx, group, p.conf.RankTitleTicker)
+				if err == nil || errors.Is(err, noDataError) {
+					gopool.Go(func() {
+						var msgChain chain.MessageChain
+						if len(p.conf.MsgWithTicker) > 0 {
+							msgChain.Line(message.Text(p.conf.MsgWithTicker))
+						}
+						msgChain.Join(message.ImageBytes(imgdata))
+						ctx.SendGroupMessage(group, msgChain)
+					})
+				} else {
+					p.env.Error(ctx, err)
 				}
-			}
 
+			}
 		}
-	}()
+		logrus.Infof("Next 将在 %s 发送Rank", c.Entry(id).Next)
+	})
+	if err != nil {
+		logrus.Errorf("开启定时发送失败 %s", err)
+		return
+	}
+
+	logrus.Infof("将在 %s 发送Rank", c.Entry(id).Next)
+	c.Start()
 }

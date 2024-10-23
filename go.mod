@@ -6,7 +6,10 @@ require (
 	github.com/FloatTech/imgfactory v0.2.2-0.20230315152233-49741fc994f9
 	github.com/FloatTech/rendercard v0.2.0
 	github.com/RomiChan/syncx v0.0.0-20240418144900-b7402ffdebc7
-	github.com/kohmebot/plugin v1.2.3
+	github.com/kohmebot/pkg v1.0.0
+	github.com/kohmebot/plugin v1.2.5
+	github.com/robfig/cron/v3 v3.0.1
+	github.com/sirupsen/logrus v1.9.3
 	github.com/wdvxdr1123/ZeroBot v1.7.5
 	gorm.io/gorm v1.25.12
 )
@@ -22,7 +25,6 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/panjf2000/ants/v2 v2.10.0 // indirect
-	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect

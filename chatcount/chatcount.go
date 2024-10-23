@@ -2,9 +2,10 @@
 package chatcount
 
 import (
+	"fmt"
+	"github.com/kohmebot/pkg/command"
+	"github.com/kohmebot/pkg/version"
 	"github.com/kohmebot/plugin"
-	"github.com/kohmebot/plugin/pkg/command"
-	"github.com/kohmebot/plugin/pkg/version"
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
@@ -58,15 +59,15 @@ func (p *PluginChatCount) Description() string {
 	return "统计水群时长"
 }
 
-func (p *PluginChatCount) Commands() command.Commands {
+func (p *PluginChatCount) Commands() fmt.Stringer {
 	return command.NewCommands(
 		command.NewCommand("查看当前水群情况", "查询水群"),
 		command.NewCommand("查看当日水群排行", "水群排名"),
 	)
 }
 
-func (p *PluginChatCount) Version() version.Version {
-	return version.NewVersion(1, 0, 33)
+func (p *PluginChatCount) Version() uint64 {
+	return uint64(version.NewVersion(1, 0, 40))
 }
 
 func (p *PluginChatCount) OnBoot() {
