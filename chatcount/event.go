@@ -59,10 +59,14 @@ func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64, rankTitle str
 	if len(chatTimeList) == 0 {
 		return nil, noDataError
 	}
+	if len(chatTimeList) >= rankSize {
+		// 超过rankSize，重新cut一下
+		chatTimeList = chatTimeList[:rankSize]
+	}
 	rankinfo := make([]*rendercard.RankInfo, len(chatTimeList))
-	wg := &sync.WaitGroup{}
-	wg.Add(len(chatTimeList))
-	for i := 0; i < len(chatTimeList) && i < rankSize; i++ {
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(chatTimeList); i++ {
+		wg.Add(1)
 		gopool.Go(func() {
 			defer wg.Done()
 			resp, err := http.Get("https://q4.qlogo.cn/g?b=qq&nk=" + strconv.FormatInt(chatTimeList[i].UserID, 10) + "&s=100")

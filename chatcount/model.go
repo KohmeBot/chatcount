@@ -137,9 +137,10 @@ func (ctdb *chattimedb) getChatRank(gid int64) (chatTimeList []chatTime) {
 	defer ctdb.chatmu.Unlock()
 	chatTimeList = make([]chatTime, 0, 100)
 	keyList := make([]string, 0, 100)
+	now := time.Now()
 	ctdb.userTimestampMap.Range(func(key string, value int64) bool {
 		t := time.Unix(value, 0)
-		if strings.Contains(key, strconv.FormatInt(gid, 10)) && t.YearDay() == time.Now().YearDay() {
+		if strings.Contains(key, strconv.FormatInt(gid, 10)) && t.YearDay() == now.YearDay() {
 			keyList = append(keyList, key)
 		}
 		return true
