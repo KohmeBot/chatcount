@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"github.com/FloatTech/imgfactory"
 	"github.com/FloatTech/rendercard"
+	"github.com/fumiama/cron"
 	"github.com/kohmebot/pkg/chain"
 	"github.com/kohmebot/pkg/gopool"
-	"github.com/robfig/cron/v3"
 	"github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
@@ -69,7 +69,7 @@ func (p *PluginChatCount) getRankImage(ctx *zero.Ctx, group int64, rankTitle str
 		wg.Add(1)
 		gopool.Go(func() {
 			defer wg.Done()
-			resp, err := http.Get("https://q4.qlogo.cn/g?b=qq&nk=" + strconv.FormatInt(chatTimeList[i].UserID, 10) + "&s=100")
+			resp, err := http.Get(fmt.Sprintf("https://q4.qlogo.cn/g?b=qq&nk=%d&s=%d", chatTimeList[i].UserID, p.conf.AvatarSizeToParam()))
 			if err != nil {
 				return
 			}
