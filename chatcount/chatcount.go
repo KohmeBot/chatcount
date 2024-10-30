@@ -7,11 +7,19 @@ import (
 	"github.com/kohmebot/pkg/version"
 	"github.com/kohmebot/plugin"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/yanyiwu/gojieba"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 const (
 	rankSize = 10
 )
+
+var filter = []string{
+	"牛", "6",
+}
 
 type PluginChatCount struct {
 	env      plugin.Env
@@ -39,7 +47,17 @@ func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	if err != nil {
 		return err
 	}
-	p.ctdb, err = initialize(db)
+	var stopWordsPath string
+	if len(p.conf.StopWordFile) <= 0 {
+		stopWordsPath = gojieba.STOP_WORDS_PATH
+	} else {
+		stopWordsPath = filepath.Join(p.filePath, p.conf.StopWordFile)
+	}
+	buf, err := os.ReadFile(stopWordsPath)
+	if err != nil {
+		return err
+	}
+	p.ctdb, err = initialize(db, strings.Fields(string(buf)))
 	if err != nil {
 		return err
 	}
@@ -67,9 +85,19 @@ func (p *PluginChatCount) Commands() fmt.Stringer {
 }
 
 func (p *PluginChatCount) Version() uint64 {
-	return uint64(version.NewVersion(1, 0, 46))
+	return uint64(version.NewVersion(1, 0, 50))
 }
 
 func (p *PluginChatCount) OnBoot() {
+	var err error
+	defer func() {
+		if err != nil {
+			for ctx := range p.env.RangeBot {
+				p.env.Error(ctx, err)
+			}
+		}
+	}()
 	p.startRankSendTicker()
+	err = p.ctdb.autoClear()
+
 }

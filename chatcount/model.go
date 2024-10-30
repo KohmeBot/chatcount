@@ -3,7 +3,12 @@ package chatcount
 import (
 	"errors"
 	"fmt"
+	"github.com/fumiama/cron"
+	"github.com/sirupsen/logrus"
+	"github.com/yanyiwu/gojieba"
 	"gorm.io/gorm"
+	"runtime"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -17,6 +22,57 @@ const (
 	chatInterval = 300
 )
 
+type Word struct {
+	Word  string
+	Count int64
+}
+
+type WordCounter struct {
+	wmp map[string]int64
+}
+
+func (w *WordCounter) Saves(words []string) {
+	for _, v := range words {
+		w.Save(v)
+	}
+}
+
+func (w *WordCounter) Save(word string) {
+	word = strings.TrimSpace(word)
+	if len(word) <= 0 {
+		return
+	}
+	w.wmp[word]++
+}
+
+func (w *WordCounter) Clear() {
+	clear(w.wmp)
+}
+
+// GetWordRank 返回一个排序好的词频
+func (w *WordCounter) GetWordRank(maxWord int) (res []Word) {
+	kvs := make([]Word, 0, len(w.wmp))
+	for k, v := range w.wmp {
+		kvs = append(kvs, Word{k, v})
+	}
+
+	// 排序词频
+	slices.SortFunc(kvs, func(a, b Word) int {
+		return int(b.Count - a.Count)
+	})
+
+	// 确保 res 的长度不超过 kvs 的长度
+	if maxWord > len(kvs) {
+		maxWord = len(kvs)
+	}
+
+	res = make([]Word, maxWord)
+	for i := 0; i < maxWord; i++ {
+		res[i] = kvs[i]
+	}
+	return res
+}
+
 // chattimedb 聊天时长数据库结构体
 type chattimedb struct {
 	// ctdb.userTimestampMap 每个人发言的时间戳 key=groupID_userID
@@ -25,35 +81,48 @@ type chattimedb struct {
 	userTodayTimeMap syncx.Map[string, int64]
 	// ctdb.userTodayMessageMap 每个人今日水群次数 key=groupID_userID
 	userTodayMessageMap syncx.Map[string, int64]
+	// ctdb.userTodayWordMap 每个人今日的热词 key=groupID_userID
+	userTodayWordMap syncx.Map[string, WordCounter]
 	// db 数据库
 	db *gorm.DB
 	// chatmu 读写添加锁
 	chatmu sync.Mutex
 
+	// 停用词
+	stopWords map[string]struct{}
+
 	l *leveler
 }
 
 // initialize 初始化
-func initialize(gdb *gorm.DB) (*chattimedb, error) {
+func initialize(gdb *gorm.DB, stopWords []string) (*chattimedb, error) {
+	stopWords = append(stopWords, filter...)
 	err := gdb.AutoMigrate(&chatTime{})
 	if err != nil {
 		return nil, err
 	}
+	mp := make(map[string]struct{}, len(stopWords))
+	for _, word := range stopWords {
+		mp[word] = struct{}{}
+	}
+	logrus.Infof("已加载 %d 个停用词", len(mp))
 	return &chattimedb{
-		db: gdb,
-		l:  newLeveler(60, 120, 180, 240, 300),
+		db:        gdb,
+		stopWords: mp,
+		l:         newLeveler(60, 120, 180, 240, 300),
 	}, nil
 }
 
 // chatTime 聊天时长，时间的单位都是秒
 type chatTime struct {
-	ID           uint  `gorm:"primary_key"`
-	GroupID      int64 `gorm:"column:group_id"`
-	UserID       int64 `gorm:"column:user_id"`
-	TodayTime    int64 `gorm:"-"`
-	TodayMessage int64 `gorm:"-"`
-	TotalTime    int64 `gorm:"column:total_time;default:0"`
-	TotalMessage int64 `gorm:"column:total_message;default:0"`
+	ID           uint   `gorm:"primary_key"`
+	GroupID      int64  `gorm:"column:group_id"`
+	UserID       int64  `gorm:"column:user_id"`
+	TodayTime    int64  `gorm:"-"`
+	TodayMessage int64  `gorm:"-"`
+	TotalTime    int64  `gorm:"column:total_time;default:0"`
+	TotalMessage int64  `gorm:"column:total_message;default:0"`
+	HotWords     []Word `gorm:"-"`
 }
 
 // TableName 表名
@@ -116,6 +185,29 @@ func (ctdb *chattimedb) updateChatTime(gid, uid int64) (remindTime int64, remind
 	return
 }
 
+// updateChatWord 更新发言词
+func (ctdb *chattimedb) updateChatWord(gid, uid int64, msgs []string) {
+	ctdb.chatmu.Lock()
+	defer ctdb.chatmu.Unlock()
+	x := gojieba.NewJieba()
+	var words []string
+	for _, msg := range msgs {
+		words = append(words, x.Cut(msg, true)...)
+	}
+	words = slices.DeleteFunc(words, func(s string) bool {
+		_, ok := ctdb.stopWords[strings.TrimSpace(s)]
+		return ok
+	})
+
+	key := fmt.Sprintf("%d_%d", gid, uid)
+	c, ok := ctdb.userTodayWordMap.Load(key)
+	if !ok {
+		c = WordCounter{map[string]int64{}}
+	}
+	c.Saves(words)
+	ctdb.userTodayWordMap.Store(key, c)
+}
+
 // getChatTime 获得用户聊天时长和消息次数,todayTime,totalTime的单位是秒,todayMessage,totalMessage单位是条数
 func (ctdb *chattimedb) getChatTime(gid, uid int64) (todayTime, todayMessage, totalTime, totalMessage int64) {
 	ctdb.chatmu.Lock()
@@ -150,15 +242,40 @@ func (ctdb *chattimedb) getChatRank(gid int64) (chatTimeList []chatTime) {
 		uid, _ := strconv.ParseInt(a, 10, 64)
 		todayTime, _ := ctdb.userTodayTimeMap.Load(v)
 		todayMessage, _ := ctdb.userTodayMessageMap.Load(v)
+		todayWords, _ := ctdb.userTodayWordMap.Load(v)
 		chatTimeList = append(chatTimeList, chatTime{
 			GroupID:      gid,
 			UserID:       uid,
 			TodayTime:    todayTime,
 			TodayMessage: todayMessage,
+			HotWords:     todayWords.GetWordRank(5),
 		})
 	}
 	sort.Sort(sortChatTime(chatTimeList))
 	return
+}
+
+func (ctdb *chattimedb) autoClear() error {
+	c := cron.New()
+	_, err := c.AddFunc("0 0 * * *", func() {
+		time.Sleep(15 * time.Second)
+		ctdb.chatmu.Lock()
+		defer ctdb.chatmu.Unlock()
+		start := time.Now()
+		defer func() {
+			logrus.Infof("AutoClear cost %s", time.Since(start))
+		}()
+		ctdb.userTimestampMap = syncx.Map[string, int64]{}
+		ctdb.userTodayTimeMap = syncx.Map[string, int64]{}
+		ctdb.userTodayMessageMap = syncx.Map[string, int64]{}
+		ctdb.userTodayWordMap = syncx.Map[string, WordCounter]{}
+		runtime.GC()
+	})
+	if err != nil {
+		return err
+	}
+	c.Start()
+	return nil
 }
 
 // leveler 结构体，包含一个 levelArray 字段

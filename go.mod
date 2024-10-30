@@ -6,11 +6,12 @@ require (
 	github.com/FloatTech/imgfactory v0.2.2-0.20230315152233-49741fc994f9
 	github.com/FloatTech/rendercard v0.2.0
 	github.com/RomiChan/syncx v0.0.0-20240418144900-b7402ffdebc7
+	github.com/fumiama/cron v1.3.0
 	github.com/kohmebot/pkg v1.0.0
 	github.com/kohmebot/plugin v1.2.5
-	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/wdvxdr1123/ZeroBot v1.7.5
+	github.com/yanyiwu/gojieba v1.4.4
 	gorm.io/gorm v1.25.12
 )
 
