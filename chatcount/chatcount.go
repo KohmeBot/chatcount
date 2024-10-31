@@ -43,6 +43,7 @@ func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	if err != nil {
 		return err
 	}
+	initJieBaDict(p.filePath)
 	db, err := env.GetDB()
 	if err != nil {
 		return err
@@ -85,7 +86,7 @@ func (p *PluginChatCount) Commands() fmt.Stringer {
 }
 
 func (p *PluginChatCount) Version() uint64 {
-	return uint64(version.NewVersion(1, 0, 50))
+	return uint64(version.NewVersion(1, 0, 51))
 }
 
 func (p *PluginChatCount) OnBoot() {
@@ -100,4 +101,13 @@ func (p *PluginChatCount) OnBoot() {
 	p.startRankSendTicker()
 	err = p.ctdb.autoClear()
 
+}
+
+func initJieBaDict(rootPath string) {
+	gojieba.DICT_DIR = filepath.Join(rootPath, "dict")
+	gojieba.DICT_PATH = filepath.Join(gojieba.DICT_DIR, "jieba.dict.utf8")
+	gojieba.HMM_PATH = filepath.Join(gojieba.DICT_DIR, "hmm_model.utf8")
+	gojieba.USER_DICT_PATH = filepath.Join(gojieba.DICT_DIR, "user.dict.utf8")
+	gojieba.IDF_PATH = filepath.Join(gojieba.DICT_DIR, "idf.utf8")
+	gojieba.STOP_WORDS_PATH = filepath.Join(gojieba.DICT_DIR, "stop_words.utf8")
 }
