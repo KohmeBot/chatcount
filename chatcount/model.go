@@ -91,6 +91,8 @@ type chattimedb struct {
 	// 停用词
 	stopWords map[string]struct{}
 
+	jieba *gojieba.Jieba
+
 	l *leveler
 }
 
@@ -109,6 +111,7 @@ func initialize(gdb *gorm.DB, stopWords []string) (*chattimedb, error) {
 	return &chattimedb{
 		db:        gdb,
 		stopWords: mp,
+		jieba:     gojieba.NewJieba(),
 		l:         newLeveler(60, 120, 180, 240, 300),
 	}, nil
 }
@@ -189,7 +192,7 @@ func (ctdb *chattimedb) updateChatTime(gid, uid int64) (remindTime int64, remind
 func (ctdb *chattimedb) updateChatWord(gid, uid int64, msgs []string) {
 	ctdb.chatmu.Lock()
 	defer ctdb.chatmu.Unlock()
-	x := gojieba.NewJieba()
+	x := ctdb.jieba
 	var words []string
 	for _, msg := range msgs {
 		words = append(words, x.Cut(msg, true)...)
