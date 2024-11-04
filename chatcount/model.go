@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/RomiChan/syncx"
 )
@@ -198,7 +199,11 @@ func (ctdb *chattimedb) updateChatWord(gid, uid int64, msgs []string) {
 		words = append(words, x.Cut(msg, true)...)
 	}
 	words = slices.DeleteFunc(words, func(s string) bool {
-		_, ok := ctdb.stopWords[strings.TrimSpace(s)]
+		trimmed := strings.TrimSpace(s)
+		if utf8.RuneCountInString(trimmed) < 2 {
+			return true
+		}
+		_, ok := ctdb.stopWords[trimmed]
 		return ok
 	})
 

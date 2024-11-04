@@ -18,7 +18,7 @@ const (
 )
 
 var filter = []string{
-	"牛", "6",
+	"牛", "6", "一个",
 }
 
 type PluginChatCount struct {
@@ -86,7 +86,7 @@ func (p *PluginChatCount) Commands() fmt.Stringer {
 }
 
 func (p *PluginChatCount) Version() uint64 {
-	return uint64(version.NewVersion(1, 0, 51))
+	return uint64(version.NewVersion(1, 0, 52))
 }
 
 func (p *PluginChatCount) OnBoot() {
