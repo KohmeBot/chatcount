@@ -7,7 +7,7 @@ require (
 	github.com/FloatTech/rendercard v0.2.0
 	github.com/RomiChan/syncx v0.0.0-20240418144900-b7402ffdebc7
 	github.com/fumiama/cron v1.3.0
-	github.com/kohmebot/pkg v1.0.0
+	github.com/kohmebot/pkg v1.0.1
 	github.com/kohmebot/plugin v1.2.5
 	github.com/sirupsen/logrus v1.9.3
 	github.com/wdvxdr1123/ZeroBot v1.7.5
