@@ -33,6 +33,13 @@ func NewPlugin() plugin.Plugin {
 	return new(PluginChatCount)
 }
 
+func (p *PluginChatCount) GetGroupChatInfo(group int64, onlyToday bool) map[int64][2]int64 {
+	if onlyToday {
+		return p.ctdb.getChatInfo(group)
+	}
+	return p.ctdb.getTotalChatInfo(group)
+}
+
 func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
 	p.env = env
 	err := env.GetConf(&p.conf)
@@ -86,7 +93,7 @@ func (p *PluginChatCount) Commands() fmt.Stringer {
 }
 
 func (p *PluginChatCount) Version() uint64 {
-	return uint64(version.NewVersion(1, 0, 52))
+	return uint64(version.NewVersion(1, 0, 60))
 }
 
 func (p *PluginChatCount) OnBoot() {

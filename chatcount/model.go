@@ -263,6 +263,26 @@ func (ctdb *chattimedb) getChatRank(gid int64) (chatTimeList []chatTime) {
 	return
 }
 
+// getChatInfo 获得今日水群信息
+func (ctdb *chattimedb) getChatInfo(gid int64) map[int64][2]int64 {
+	chatTimeList := ctdb.getChatRank(gid)
+	res := make(map[int64][2]int64, len(chatTimeList))
+	for _, c := range chatTimeList {
+		res[c.UserID] = [2]int64{c.TodayTime, c.TodayMessage}
+	}
+	return res
+}
+
+// getChatInfo 获得总水群信息
+func (ctdb *chattimedb) getTotalChatInfo(gid int64) map[int64][2]int64 {
+	chatTimeList := ctdb.getChatRank(gid)
+	res := make(map[int64][2]int64, len(chatTimeList))
+	for _, c := range chatTimeList {
+		res[c.UserID] = [2]int64{c.TotalTime, c.TotalMessage}
+	}
+	return res
+}
+
 func (ctdb *chattimedb) autoClear() error {
 	c := cron.New()
 	_, err := c.AddFunc("0 0 * * *", func() {
