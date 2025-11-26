@@ -3,10 +3,11 @@ package chatcount
 
 import (
 	"fmt"
+	"github.com/kohmebot/pkg/chain"
 	"github.com/kohmebot/pkg/command"
-	"github.com/kohmebot/pkg/version"
-	"github.com/kohmebot/plugin"
+	"github.com/kohmebot/plugin/v2"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 	"github.com/yanyiwu/gojieba"
 	"os"
 	"path/filepath"
@@ -40,7 +41,7 @@ func (p *PluginChatCount) GetGroupChatInfo(group int64, onlyToday bool) map[int6
 	return p.ctdb.getTotalChatInfo(group)
 }
 
-func (p *PluginChatCount) Init(engine *zero.Engine, env plugin.Env) error {
+func (p *PluginChatCount) OnInit(engine plugin.Engine, env plugin.Env) error {
 	p.env = env
 	err := env.GetConf(&p.conf)
 	if err != nil {
@@ -81,10 +82,6 @@ func (p *PluginChatCount) Name() string {
 	return "chatcount"
 }
 
-func (p *PluginChatCount) Description() string {
-	return "统计水群时长"
-}
-
 func (p *PluginChatCount) Commands() fmt.Stringer {
 	return command.NewCommands(
 		command.NewCommand("查看当前水群情况", "水群查询"),
@@ -92,17 +89,30 @@ func (p *PluginChatCount) Commands() fmt.Stringer {
 	)
 }
 
-func (p *PluginChatCount) Version() uint64 {
-	return uint64(version.NewVersion(1, 0, 61))
+func (p *PluginChatCount) OnHelp(ctx *zero.Ctx) {
+	var msg chain.MessageChain
+
+	msg.Split(
+		message.Text("chat 插件所有命令"),
+		message.Text("水群查询：查看当前水群情况"),
+		message.Text("水群排名：查看当日水群排行"),
+	)
+
+	ctx.Send(msg)
+}
+
+func (p *PluginChatCount) Version() string {
+	return "v1.1.0"
 }
 
 func (p *PluginChatCount) OnBoot() {
 	var err error
 	defer func() {
 		if err != nil {
-			for ctx := range p.env.RangeBot {
+			p.env.UseBot(func(ctx *zero.Ctx) {
 				p.env.Error(ctx, err)
-			}
+			})
+
 		}
 	}()
 	p.startRankSendTicker()

@@ -8,6 +8,7 @@ import (
 	"github.com/fumiama/cron"
 	"github.com/kohmebot/pkg/chain"
 	"github.com/kohmebot/pkg/gopool"
+	"github.com/kohmebot/plugin/v2"
 	"github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
@@ -21,7 +22,7 @@ import (
 
 var noDataError = errors.New("没有水群数据")
 
-func (p *PluginChatCount) SetOnMsg(engine *zero.Engine) {
+func (p *PluginChatCount) SetOnMsg(engine plugin.Engine) {
 	engine.OnMessage(p.env.Groups().Rule()).
 		Handle(func(ctx *zero.Ctx) {
 			gid, uid := ctx.Event.GroupID, ctx.Event.UserID
@@ -40,7 +41,7 @@ func (p *PluginChatCount) SetOnMsg(engine *zero.Engine) {
 		})
 }
 
-func (p *PluginChatCount) SetOnTimeSearch(engine *zero.Engine) {
+func (p *PluginChatCount) SetOnTimeSearch(engine plugin.Engine) {
 	engine.OnCommand("水群查询", p.env.Groups().Rule()).SetBlock(true).Handle(func(ctx *zero.Ctx) {
 		name := ctx.NickName()
 		todayTime, todayMessage, totalTime, totalMessage := p.ctdb.getChatTime(ctx.Event.GroupID, ctx.Event.UserID)
@@ -48,7 +49,7 @@ func (p *PluginChatCount) SetOnTimeSearch(engine *zero.Engine) {
 	})
 }
 
-func (p *PluginChatCount) SetOnRankSearch(engine *zero.Engine) {
+func (p *PluginChatCount) SetOnRankSearch(engine plugin.Engine) {
 	engine.OnCommand("水群排名", p.env.Groups().Rule()).SetBlock(true).
 		Handle(func(ctx *zero.Ctx) {
 			sendimg, err := p.getRankImage(ctx, ctx.Event.GroupID, p.conf.RankTitleTrigger)
@@ -179,8 +180,8 @@ func (p *PluginChatCount) startRankSendTicker() {
 	c := cron.New()
 	var id cron.EntryID
 	id, err := c.AddFunc(p.conf.SendRankCron, func() {
-		for ctx := range p.env.RangeBot {
-			for group := range p.env.Groups().RangeGroup {
+		p.env.UseBot(func(ctx *zero.Ctx) {
+			for group := range p.env.Groups().RangeGroup() {
 				rImgdata, err := p.getRankImage(ctx, group, p.conf.RankTitleTicker)
 				time.Sleep(5 * time.Second)
 				wImgdata, err := p.getWordRankImage(ctx, group, p.conf.WordRankTitleTicker)
@@ -201,7 +202,8 @@ func (p *PluginChatCount) startRankSendTicker() {
 				}
 
 			}
-		}
+		})
+
 		logrus.Infof("Next 将在 %s 发送Rank", c.Entry(id).Next)
 	})
 	if err != nil {
