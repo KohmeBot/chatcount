@@ -2,12 +2,9 @@
 package chatcount
 
 import (
-	"fmt"
-	"github.com/kohmebot/pkg/chain"
 	"github.com/kohmebot/pkg/command"
 	"github.com/kohmebot/plugin/v2"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
 	"github.com/yanyiwu/gojieba"
 	"os"
 	"path/filepath"
@@ -82,27 +79,27 @@ func (p *PluginChatCount) Name() string {
 	return "chatcount"
 }
 
-func (p *PluginChatCount) Commands() fmt.Stringer {
-	return command.NewCommands(
-		command.NewCommand("查看当前水群情况", "水群查询"),
-		command.NewCommand("查看当日水群排行", "水群排名"),
-	)
-}
-
 func (p *PluginChatCount) OnHelp(ctx *zero.Ctx) {
-	var msg chain.MessageChain
+	help := command.HelpTemplate{
+		PluginName: "chatcount",
+		PluginDesc: "记录水群数据",
+		Commands: []command.Command{
+			{
+				CMD:  "水群查询",
+				Desc: "查看当前水群情况",
+			},
+			{
+				CMD:  "水群排名",
+				Desc: "查看当日水群排名",
+			},
+		},
+	}
 
-	msg.Split(
-		message.Text("chat 插件所有命令"),
-		message.Text("水群查询：查看当前水群情况"),
-		message.Text("水群排名：查看当日水群排行"),
-	)
-
-	ctx.Send(msg)
+	ctx.Send(help.String())
 }
 
 func (p *PluginChatCount) Version() string {
-	return "v1.1.0"
+	return "v1.1.1"
 }
 
 func (p *PluginChatCount) OnBoot() {
